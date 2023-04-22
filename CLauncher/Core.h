@@ -2,10 +2,14 @@
 #define _CORE_H_
 
 #ifdef _WIN32
-#ifdef LIBEXPORT
+#ifdef LIB_STATIC_USE
+#define LIBAPI
+#else
+#ifdef LIBEXPORTDLL
 #define LIBAPI _declspec(dllexport)
 #else
 #define LIBAPI _declspec(dllimport)
+#endif
 #endif
 #endif
 
