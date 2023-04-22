@@ -5,6 +5,7 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_internal.h"
+#include "customwidgets.h"
 #include "authenticate.h"
 #include "strutils.h"
 #include "launcher.h"
@@ -311,6 +312,11 @@ static void RenderMainWindow(void)
 	ImGui::PushItemWidth(200);
 	ImGui::ProgressBar(progress11, ImVec2(0.0f, 0.0f));
 	ImGui::PopItemWidth();
+	if(launching)
+	{
+		ImGui::SameLine();
+		ImGui::Spinner("##spinner", 7, 3, ImGui::GetColorU32(ImGuiCol_ButtonHovered));
+	}
 
 	ImGui::SetCursorPos(ImVec2(33, 63));
 	ImGui::BeginChild(12, ImVec2(386, 397), true);
