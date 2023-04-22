@@ -32,6 +32,13 @@ HPArray classPath = {0};
 
 static DownloadCallback cl = {0};
 
+void CreateBlankFile(const char* const path)
+{
+	FILE* handle;
+	fopen_s(&handle, path, "wb");
+	fclose(handle);
+}
+
 static void dlError(const char* errstr)
 {
 	fprintf_s(stderr, "Download Error: %s.\n", errstr);
@@ -385,6 +392,10 @@ int InstallVersion(void* param)
 	RECDIRS(binariesFolder.string);
 	RECDIRS(configFolder.string);
 
+	HeapString profile = join(mPath.string, "/launcher_profiles.json", NULL);
+	CreateBlankFile(profile.string);
+	CLEANSTRING(profile);
+
 	// Base version
 	char baseVersion[8] = { 0 };
 	int copySize = versionID.size;
@@ -461,6 +472,13 @@ int InstallVersionThreaded(const char* const version)
 	{
 		ResumeThread(hThread);
 	}
+}
+
+int InstallForge(const char* const path_to_installer)
+{
+	HeapString installcmd = join("java -jar jars/ForgeCLI-1.0.1-all.jar --installer ", path_to_installer, " --target ", mPath.string, NULL);
+	FILE* fp = _popen(installcmd.string, "rb");
+	CLEANSTRING(installcmd);
 }
 
 MCArgument* GetCmdLineArguments(cJSON* versionMetadata, int* nElem)

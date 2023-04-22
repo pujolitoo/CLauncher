@@ -30,18 +30,24 @@ target_link_libraries(${PROJECT_NAME} PRIVATE libzip-static.lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE AppCore Ultralight UltralightCore WebCore)
 target_link_libraries(${PROJECT_NAME} PRIVATE libMinHook.x64.lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE cjson)
-target_link_libraries(${PROJECT_NAME} PUBLIC ui-imgui)
+target_link_libraries(${PROJECT_NAME} PRIVATE ui-imgui)
 
 target_sources(${PROJECT_NAME} PRIVATE Resource.rc)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
-    "${PROJECT_SOURCE_DIR}/../third/cjson/Debug/cjson.dll"
+    "${CMAKE_SOURCE_DIR}/third/cjson/Debug/cjson.dll"
     "$<TARGET_FILE_DIR:${PROJECT_NAME}>/cjson.dll"
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${PROJECT_SOURCE_DIR}/../third/ultralight/bin"
+    "${CMAKE_SOURCE_DIR}/third/ultralight/bin"
+    "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_SOURCE_DIR}/exeresources"
     "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
 )

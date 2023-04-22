@@ -2,7 +2,8 @@
 #include "allocator.h"
 #include <stdarg.h>
 
-
+#define validate_void(ptr) if(!ptr){return;}
+#define validate_ret(ptr, ret) if(!ptr){return ret;}
 
 HeapString createString(const char* string)
 {
@@ -63,6 +64,7 @@ void cleanString(HeapString* handle, bool removeHandle)
 
 int findCharBackwards(const char* string, const char character)
 {
+	validate_ret(string, -1)
 	unsigned int offset = 0;
 	unsigned int lenght = strlen(string);
 	unsigned int index = 0;
@@ -94,8 +96,7 @@ static void replace(HeapString* dest, const HeapString source)
 
 int countChars(const char* string, const char ch)
 {
-	if (!string)
-		return 0;
+	validate_ret(string, -1)
 	int counter = 0;
 	for (int i = 0; i < strlen(string); i++)
 	{
