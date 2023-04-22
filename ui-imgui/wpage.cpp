@@ -43,7 +43,7 @@ std::vector<std::string> logBuffer;
 std::string stateLog = "";
 static float progress11 = 0.0f;
 
-GLFWwindow* g_Window = nullptr;
+GLFWwindow* g_Window = NULL;
 bool mainWindow = false;
 bool launchedSuccesfully = false;
 
@@ -91,8 +91,8 @@ static void LaunchProgress(double value, double max)
 
 BOOL CALLBACK EnumThreadWndProc(HWND hWnd, LPARAM lParam)
 {
-	SendMessage(hWnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIcon));
-	SendMessage(hWnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIcon));
+	SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 	return TRUE;
 }
 
