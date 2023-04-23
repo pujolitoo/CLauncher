@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <iterator>
 #include <fstream>
+#include <Shobjidl.h>
 
 #ifdef _WIN32
 #pragma comment(lib, "Opengl32.lib")
@@ -30,7 +31,11 @@
 
 #define FILEBUF 64
 
+#define GETHWND(glfwWindow) glfwGetWin32Window(glfwWindow)
+
 HICON hIcon = NULL;
+ITaskbarList3* hTaskBar = NULL;
+
 bool test = true;
 bool isauthenticating = false;
 bool mainW = false;
@@ -87,11 +92,13 @@ static void LaunchCompleted(void)
 
 static void LaunchProgress(double value, double max)
 {
-	progress11 = (float)(value / max);
+	float prog = (float)(value / max);
+	progress11 = prog;
 }
 
 BOOL CALLBACK EnumThreadWndProc(HWND hWnd, LPARAM lParam)
 {
+	hTaskBar->SetProgressValue(hWnd, (uint64_t)(progress11*100), (uint64_t)(100));
 	SendMessage(hWnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIcon));
 	SendMessage(hWnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIcon));
 	return TRUE;
@@ -99,6 +106,16 @@ BOOL CALLBACK EnumThreadWndProc(HWND hWnd, LPARAM lParam)
 
 static void Init( void )
 {
+	HRESULT res = CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_ITaskbarList3, (LPVOID*)&hTaskBar);
+	if(FAILED(res))
+	{
+		MessageBox(NULL, "Error", "Couldn't create taskbar object.", MB_ICONERROR);
+		exit(-4);
+	}
+
+	hTaskBar->AddRef();
+	hTaskBar->SetProgressState(GETHWND(g_Window), TBPFLAG::TBPF_NORMAL);
+
 	std::string refreshToken;
 	confFilePath = std::string(GetEXEBasePath()->string).append("conf.bin");
 	BYTE encoded[1050] = {0};
@@ -208,6 +225,8 @@ static void End( void )
 		DestroyIcon(hIcon);
 		hIcon = NULL;
 	}
+
+	hTaskBar->Release();
 }
 
 static void BeginRender( void )

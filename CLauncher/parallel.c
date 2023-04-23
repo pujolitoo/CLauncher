@@ -63,6 +63,8 @@ void parallel_delete(parallel_t handle)
     if(CAST(handle)->hThread){
 #ifdef _WIN32
         CloseHandle(CAST(handle)->hThread);
+#else
+        pthread_join(CAST(handle)->hThread, NULL);
 #endif
     }
     free(CAST(handle));

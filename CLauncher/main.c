@@ -2,6 +2,8 @@
 #include<stdlib.h>
 #include<math.h>
 
+#include <objbase.h>
+
 #include "downloader.h"
 #include "launcher.h"
 #include "cJSON.h"
@@ -12,6 +14,7 @@
 #include "imgui/example.h"
 
 #pragma warning(disable : 4996)
+#pragma comment(lib, "Ole32.lib")
 
 LPSTR* WINAPI CommandLineToArgvA_wine(LPSTR lpCmdline, int* numargs)
 {
@@ -366,6 +369,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(nCmdShow);
 
+    CoInitialize(NULL);
+
     curl_global_init(CURL_GLOBAL_ALL);
 
     int alreadyRunning = 0;
@@ -411,5 +416,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     CLEANSTRING(g_BasePath);
     curl_global_cleanup();
+    CoUninitialize();
     return EXIT_SUCCESS;
 }
