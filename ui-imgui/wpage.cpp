@@ -71,6 +71,7 @@ static void State(const char* const message)
 
 static void LaunchCompleted(void)
 {
+	progress11 = 0.0f;
 	LauncherInfo linfo = { 0 };
 	linfo.javapath = "java";
 	linfo.profile = GetProfile();

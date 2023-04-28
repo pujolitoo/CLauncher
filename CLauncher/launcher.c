@@ -284,7 +284,7 @@ int InstallAssets(cJSON* versionMetadata)
 
 int InstallVersion(void* param);
 
-static void InstallJRE()
+HeapString InstallJRE()
 {
 	//Download JRE
 	/*
