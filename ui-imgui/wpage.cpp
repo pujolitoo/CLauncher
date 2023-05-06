@@ -47,6 +47,7 @@ std::string mainWindowTitle = "PoggLand Launcher";
 std::string confFilePath;
 std::vector<std::string> logBuffer;
 std::string stateLog = "";
+std::string processstdout = "";
 static float progress11 = 0.0f;
 
 GLFWwindow* g_Window = nullptr;
@@ -69,26 +70,23 @@ static void State(const char* const message)
 		stateLog = message;
 }
 
+static void processout(const char* data, size_t blocksize)
+{
+}
+
 static void LaunchCompleted(void)
 {
 	progress11 = 0.0f;
 	LauncherInfo linfo = { 0 };
-	linfo.javapath = "java";
+	linfo.javapath = "javaw";
 	linfo.profile = GetProfile();
 	linfo.memalloc = 5000;
 	HeapString cmd = GetCommand(linfo);
 	Log("Launching game...");
 
-	STARTUPINFOA sInfo;
-	ZeroMemory(&sInfo, sizeof(STARTUPINFOA));
-	sInfo.cb = sizeof(STARTUPINFOA);
-	PROCESS_INFORMATION pInfo;
-
-	EXECPROC(cmd.string, &sInfo, &pInfo);
-	CloseHandle(pInfo.hProcess);
-	CloseHandle(pInfo.hThread);
+	ExecuteProcess(NULL, cmd.string, processout);
 	CLEANSTRING(cmd);
-	launchedSuccesfully = true;
+	//launchedSuccesfully = true;
 }
 
 static void LaunchProgress(double value, double max)
