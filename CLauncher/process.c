@@ -102,7 +102,6 @@ int ExecuteProcess(const char* environment, const char* command, void* callback)
 
 	if(callback)
 	{
-
 		SECURITY_ATTRIBUTES saAttr;
 		saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
 		saAttr.bInheritHandle = TRUE;

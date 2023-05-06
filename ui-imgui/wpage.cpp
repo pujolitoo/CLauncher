@@ -52,7 +52,10 @@ static float progress11 = 0.0f;
 
 GLFWwindow* g_Window = nullptr;
 bool mainWindow = false;
+bool consoleWindow = false;
 bool launchedSuccesfully = false;
+
+bool scrollDown = false;
 
 LauncherCallback clback = { 0 };
 
@@ -72,11 +75,14 @@ static void State(const char* const message)
 
 static void processout(const char* data, size_t blocksize)
 {
+	processstdout.append(data);
+	scrollDown = true;
 }
 
 static void LaunchCompleted(void)
 {
 	progress11 = 0.0f;
+	stateLog = "Launching...";
 	LauncherInfo linfo = { 0 };
 	linfo.javapath = "javaw";
 	linfo.profile = GetProfile();
@@ -86,6 +92,8 @@ static void LaunchCompleted(void)
 
 	ExecuteProcess(NULL, cmd.string, processout);
 	CLEANSTRING(cmd);
+	consoleWindow = true;
+	mainW = false;
 	//launchedSuccesfully = true;
 }
 
@@ -312,6 +320,25 @@ static bool ButtonWState(const char* label, const ImVec2& size_arg, bool state)
 	return result;
 }
 
+static void RenderConsoleWindow( void )
+{
+	ImGui::Begin("Console", &consoleWindow, ImGuiWindowFlags_NoCollapse);
+	ImGui::TextUnformatted("Game Process Console");
+	ImGui::SameLine();
+	if(ImGui::Button("Clear"))
+		processstdout.clear();
+	ImGui::Separator();
+	ImGui::BeginChild("##consolelog");
+	ImGui::TextUnformatted(processstdout.c_str());
+	if(scrollDown)
+	{
+		ImGui::SetScrollHereY(1.0f);
+		scrollDown = false;
+	}
+	ImGui::EndChild();
+	ImGui::End();
+}
+
 static void RenderMainWindow(void)
 {
 	//ImGui::ShowDemoWindow();
@@ -442,6 +469,10 @@ static void Render( void )
 	if (mainW)
 	{
 		RenderMainWindow();
+	}
+	if(consoleWindow)
+	{
+		RenderConsoleWindow();
 	}
 }
 
