@@ -106,24 +106,19 @@ TaskPool* create_task_pool(_taskpool_complete completed_callback)
 int add_task(TaskPool* pool, _start_func func, void* param)
 {
     if(!func || !pool)
-    {
         return 0;
-    }
 
     pool->nTasks++;
     Task* temp = pool->taskpool;
-    pool->taskpool = (Task*)realloc(pool->taskpool, sizeof(Task)*pool->nTasks);
+    pool->taskpool = (Task*)realloc(temp, sizeof(Task)*pool->nTasks);
 
-    if(temp)
-    {
-        free(temp);
-    }
+    if(!pool->taskpool)
+        return 0;
 
     Task* currTask = &(pool->taskpool[pool->nTasks-1]);
     memset(currTask, 0, sizeof(Task));
     currTask->task = func;
     currTask->param = param;
-
     return 1;
 }
 

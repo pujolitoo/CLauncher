@@ -92,7 +92,7 @@ static void LaunchCompleted(void)
 	HeapString cmd = GetCommand(linfo);
 	Log("Launching game...");
 
-	ExecuteProcess(NULL, cmd.string, processout);
+	ExecuteProcess(NULL, cmd.string, processout, NULL);
 	CLEANSTRING(cmd);
 	consoleWindow = true;
 	mainW = false;
@@ -166,7 +166,6 @@ static void Init( void )
 	logBuffer.append("[LOG]\n");
 
 	clback.clLog = Log;
-	clback.clCompleted = LaunchCompleted;
 	clback.clProgress = LaunchProgress;
 	clback.clState = State;
 
@@ -301,7 +300,11 @@ static void PlayButton(void)
 	launching = true;
 	InitMinecraftInstance(basePath.c_str());
 	SetCallback(clback);
-	InstallVersionThreaded("1.16.5");
+
+	TaskPool* install_task = create_task_pool(LaunchCompleted);
+	add_task(install_task, InstallVersion, "1.16.5");
+	add_task(install_task, InstallForge, "1.16.5-36.2.39");
+	execute_taskpool_concurrent(install_task);
 }
 
 static bool ButtonWState(const char* label, const ImVec2& size_arg, bool state)

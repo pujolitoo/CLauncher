@@ -11,6 +11,8 @@ EXTERNC void MessageBoxLastError();
 
 int GetExecutableName(char* dest, size_t bufferSize);
 
-EXTERNC int ExecuteProcess(const char* environment, const char* command, void* callback);
+EXTERNC int ExecuteProcess(const char* environment, const char* command, void* callback, void* process_handle);
+
+EXTERNC int IsProcessRunning(void* hProcess);
 
 #endif

@@ -17,9 +17,6 @@
 #define JRE_RUNTIME_URL_TERMINATION "/ga"
 #define JRE_DISTRIBUTOR_TERMINATION "_adopt"
 
-HANDLE hThread = NULL;
-HANDLE hForgeThread = NULL;
-
 HeapString mPath;
 HeapString assetsFolder;
 HeapString versionsFolder;
@@ -368,8 +365,6 @@ int InitMinecraftInstance(const char* const path)
 	NORMALIZE(librariesFolder);
 	NORMALIZE(binariesFolder);
 	NORMALIZE(configFolder);
-
-	hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)InstallVersion, NULL, CREATE_SUSPENDED, NULL);
 }
 
 void ClearMinecraftInstance()
@@ -383,7 +378,6 @@ void ClearMinecraftInstance()
 	CLEANSTRING(configFolder);
 	CLEANSTRING(versionID);
 	CLEANSTRING(versionIDBase);
-	CloseHandle(hThread);
 }
 
 int InstallVersion(void* param)
@@ -395,6 +389,8 @@ int InstallVersion(void* param)
 	RECDIRS(librariesFolder.string);
 	RECDIRS(binariesFolder.string);
 	RECDIRS(configFolder.string);
+
+	versionID = createString(param);
 
 	HeapString profile = join(mPath.string, "/launcher_profiles.json", NULL);
 	CreateBlankFile(profile.string);
@@ -469,15 +465,6 @@ int InstallVersion(void* param)
 	cJSON_Delete(versionMetadata);
 }
 
-int InstallVersionThreaded(const char* const version)
-{
-	versionID = createString(version);
-	if (hThread)
-	{
-		ResumeThread(hThread);
-	}
-}
-
 static inline int GetForgeURL(const char* const forgeVersion, char* buffer, size_t bufferSize)
 {
 	return sprintf_s(buffer, bufferSize, baseurl, forgeVersion, forgeVersion);
@@ -488,8 +475,9 @@ void logAdapter(const char* const message, size_t size_t)
 	Log(message);
 }
 
-int InstallForge(const char* const fVersion)
+int InstallForge(void* fVersion)
 {
+	HANDLE hProcess = NULL;
 	char* parsedUrl[MAX_PATH];
 
 	Log("Installing Forge.");
@@ -507,18 +495,15 @@ int InstallForge(const char* const fVersion)
 
 	HeapString command = join("javaw -jar ", forgeclipath.string, " --installer ", dlpath.string, " --target ", mPath.string, NULL);
 
-	ExecuteProcess(NULL, command.string, logAdapter);
+	ExecuteProcess(NULL, command.string, logAdapter, &hProcess);
+
+	WaitForSingleObject(hProcess, INFINITE);
 
 	CLEANSTRING(dlpath);
 	CLEANSTRING(forgeclipath);
 	CLEANSTRING(command);
 	SetState("");
 	return 1;
-}
-
-int InstallForgeThreaded(const char* const forge_version)
-{
-	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)InstallForge, forge_version, 0, NULL);
 }
 
 MCArgument* GetCmdLineArguments(cJSON* versionMetadata, int* nElem)

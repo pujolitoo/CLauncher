@@ -1,8 +1,8 @@
 #include "process.h"
 #include <string.h>
+#include "strutils.h"
 #include <Windows.h>
 #include <TlHelp32.h>
-#include "strutils.h"
 
 #define BUFSIZE 4096
 
@@ -20,8 +20,9 @@ int GetExecutableName(char* dest, size_t bufferSize)
 	return 0;
 }
 
-BOOL IsProcessRunning(HANDLE hProcess)
+int IsProcessRunning(void* hProcess)
 {
+	if(!hProcess) return FALSE;
 	DWORD exitCode;
 	return (GetExitCodeProcess(hProcess, &exitCode) == STILL_ACTIVE);
 }
@@ -93,7 +94,7 @@ DWORD StdCapture(void* param)
 	return 0;
 }
 
-int ExecuteProcess(const char* environment, const char* command, void* callback)
+int ExecuteProcess(const char* environment, const char* command, void* callback, void* process_handle)
 {
 	BOOL bSuccess = FALSE;
 	STARTUPINFO sInfo;
@@ -128,6 +129,8 @@ int ExecuteProcess(const char* environment, const char* command, void* callback)
 
 		bSuccess = CreateProcess(NULL, command, NULL, NULL, TRUE, 0, NULL, environment, &sInfo, group->pInfo);
 		if(!bSuccess) return 0;
+		if(process_handle)
+			*(HANDLE*)process_handle = group->pInfo->hProcess;
 		hThread = CreateThread(&saAttr, 0, (LPTHREAD_START_ROUTINE)StdCapture, group, 0, NULL);
 		if(!hThread) return 0;
 	}

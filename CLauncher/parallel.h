@@ -44,7 +44,7 @@ _thread_handle parallel_get_thread_handle(parallel_t handle);
 
 int parallel_get_thread_id(parallel_t handle);
 
-EXTERNC TaskPool* create_task_pool();
+EXTERNC TaskPool* create_task_pool(_taskpool_complete completed_callback);
 
 EXTERNC int add_task(TaskPool* pool, _start_func func, void* param);
 

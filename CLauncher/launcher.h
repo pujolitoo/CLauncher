@@ -40,8 +40,6 @@ struct launcher_info_t
 
 EXTERNC int InitMinecraftInstance(const char* const path);
 
-EXTERNC int InstallVersionThreaded(const char* const version);
-
 EXTERNC void ClearMinecraftInstance();
 
 typedef struct launcher_info_t LauncherInfo;
@@ -50,6 +48,6 @@ EXTERNC void SetCallback(const LauncherCallback callback);
 
 EXTERNC HeapString GetCommand(const struct launcher_info_t info);
 
-EXTERNC int InstallForge(const char* const fVersion);
+EXTERNC int InstallForge(void* fVersion);
 
-EXTERNC int InstallForgeThreaded(const char* const forge_version);
+EXTERNC int InstallVersion(void* param);
