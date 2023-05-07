@@ -2,9 +2,11 @@
 
 #include <cJSON.h>
 #include "downloader.h"
+#include "main.h"
 #include "arrutil.h"
 #include "uuid4.h"
 #include "ziphelper.h"
+#include "process.h"
 #include "osutil.h"
 
 #define GenericError(x) MessageBoxA(NULL, x, "Error", MB_ICONERROR)
@@ -16,7 +18,7 @@
 #define JRE_DISTRIBUTOR_TERMINATION "_adopt"
 
 HANDLE hThread = NULL;
-
+HANDLE hForgeThread = NULL;
 
 HeapString mPath;
 HeapString assetsFolder;
@@ -29,6 +31,8 @@ HeapString versionIDBase;
 HeapString loggingInfo;
 LauncherCallback clback = {0};
 HPArray classPath = {0};
+
+const char* baseurl = "https://maven.minecraftforge.net/net/minecraftforge/forge/%s/forge-%s-installer.jar";
 
 static DownloadCallback cl = {0};
 
@@ -474,11 +478,47 @@ int InstallVersionThreaded(const char* const version)
 	}
 }
 
-int InstallForge(const char* const path_to_installer)
+static inline int GetForgeURL(const char* const forgeVersion, char* buffer, size_t bufferSize)
 {
-	HeapString installcmd = join("java -jar jars/ForgeCLI-1.0.1-all.jar --installer ", path_to_installer, " --target ", mPath.string, NULL);
-	FILE* fp = _popen(installcmd.string, "rb");
-	CLEANSTRING(installcmd);
+	return sprintf_s(buffer, bufferSize, baseurl, forgeVersion, forgeVersion);
+}
+
+void logAdapter(const char* const message, size_t size_t)
+{
+	Log(message);
+}
+
+int InstallForge(const char* const fVersion)
+{
+	char* parsedUrl[MAX_PATH];
+
+	Log("Installing Forge.");
+	SetState("Installing Forge.");
+
+	if(GetForgeURL(fVersion, parsedUrl, MAX_PATH) == -1)
+	{
+		return 0;
+	}
+
+	HeapString dlpath = join(GetEXEBasePath()->string, "/jars/forge-", fVersion, "-installer.jar", NULL);
+	DirectDowload(parsedUrl, dlpath.string);
+
+	HeapString forgeclipath = join(GetEXEBasePath()->string, "/jars/ForgeCLI-1.0.1-all.jar", NULL);
+
+	HeapString command = join("javaw -jar ", forgeclipath.string, " --installer ", dlpath.string, " --target ", mPath.string, NULL);
+
+	ExecuteProcess(NULL, command.string, logAdapter);
+
+	CLEANSTRING(dlpath);
+	CLEANSTRING(forgeclipath);
+	CLEANSTRING(command);
+	SetState("");
+	return 1;
+}
+
+int InstallForgeThreaded(const char* const forge_version)
+{
+	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)InstallForge, forge_version, 0, NULL);
 }
 
 MCArgument* GetCmdLineArguments(cJSON* versionMetadata, int* nElem)

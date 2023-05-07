@@ -78,3 +78,58 @@ int parallel_cancel(parallel_t handle)
     return pthread_cancel(CAST(handle)->hThread);
 #endif
 }
+
+int TaskExecutorConcurrent( void* param )
+{
+    TaskPool* pool = (TaskPool*)param;
+    for(int i = 0; i < pool->nTasks; i++)
+    {
+        Task task = pool->taskpool[i];
+        task.task(task.param);
+    }
+    pool->completed();
+    return 0;
+}
+
+TaskPool* create_task_pool(_taskpool_complete completed_callback)
+{
+    TaskPool* temp = malloc(sizeof(TaskPool));
+    if(!temp)
+    {
+        return NULL;
+    }
+    memset(temp, 0, sizeof(TaskPool));
+    temp->completed = completed_callback;
+    return temp;
+}
+
+int add_task(TaskPool* pool, _start_func func, void* param)
+{
+    if(!func || !pool)
+    {
+        return 0;
+    }
+
+    pool->nTasks++;
+    Task* temp = pool->taskpool;
+    pool->taskpool = (Task*)realloc(pool->taskpool, sizeof(Task)*pool->nTasks);
+
+    if(temp)
+    {
+        free(temp);
+    }
+
+    Task* currTask = &(pool->taskpool[pool->nTasks-1]);
+    memset(currTask, 0, sizeof(Task));
+    currTask->task = func;
+    currTask->param = param;
+
+    return 1;
+}
+
+void execute_taskpool_concurrent(TaskPool* pool)
+{
+    if(!pool || pool->nTasks < 0)
+        return;
+    parallel_t thread = parallel_create((_start_func)TaskExecutorConcurrent, (void*)pool);
+}

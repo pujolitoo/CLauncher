@@ -9,6 +9,7 @@
 #include "authenticate.h"
 #include "strutils.h"
 #include "launcher.h"
+#include "parallel.h"
 #include "process.h"
 #include "base64.h"
 #include "osutil.h"
@@ -45,7 +46,7 @@ bool launching = false;
 
 std::string mainWindowTitle = "PoggLand Launcher";
 std::string confFilePath;
-std::vector<std::string> logBuffer;
+std::string logBuffer;
 std::string stateLog = "";
 std::string processstdout = "";
 static float progress11 = 0.0f;
@@ -64,7 +65,8 @@ static void OnceLoggedIn();
 static void Log(const char* const message)
 {
 	if(message)
-		logBuffer.push_back(message);
+		logBuffer.append(message);
+		logBuffer.append("\n");
 }
 
 static void State(const char* const message)
@@ -161,7 +163,7 @@ static void Init( void )
 		}
 	}
 
-	logBuffer.push_back("[LOG]");
+	logBuffer.append("[LOG]\n");
 
 	clback.clLog = Log;
 	clback.clCompleted = LaunchCompleted;
@@ -365,10 +367,7 @@ static void RenderMainWindow(void)
 
 	ImGui::SetCursorPos(ImVec2(33, 63));
 	ImGui::BeginChild(12, ImVec2(386, 397), true);
-	for (std::vector<std::string>::iterator it = logBuffer.begin(); it != logBuffer.end(); it++)
-	{
-		ImGui::TextUnformatted(it->c_str());
-	}
+	ImGui::TextUnformatted(logBuffer.c_str());
 	ImGui::SetScrollHereY(1.0f);
 	ImGui::EndChild();
 	ImGui::End();

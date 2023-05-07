@@ -69,7 +69,7 @@ typedef struct
 DWORD StdCapture(void* param)
 {
 	StdGroup* g_Std = (StdGroup*)param;
-	char chBuf[BUFSIZE];
+	char chBuf[BUFSIZE] = {0};
 	BOOL bSuccess = FALSE;
 	DWORD dwRead = 0;
 

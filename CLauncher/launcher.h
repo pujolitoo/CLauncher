@@ -49,3 +49,7 @@ typedef struct launcher_info_t LauncherInfo;
 EXTERNC void SetCallback(const LauncherCallback callback);
 
 EXTERNC HeapString GetCommand(const struct launcher_info_t info);
+
+EXTERNC int InstallForge(const char* const fVersion);
+
+EXTERNC int InstallForgeThreaded(const char* const forge_version);
