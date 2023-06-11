@@ -489,6 +489,9 @@ int InstallForge(void* fVersion)
 	}
 
 	HeapString dlpath = join(GetEXEBasePath()->string, "/jars/forge-", fVersion, "-installer.jar", NULL);
+	if(FileExists(dlpath.string))
+		return 1;
+
 	DirectDowload(parsedUrl, dlpath.string);
 
 	HeapString forgeclipath = join(GetEXEBasePath()->string, "/jars/ForgeCLI-1.0.1-all.jar", NULL);
@@ -509,6 +512,7 @@ int InstallForge(void* fVersion)
 MCArgument* GetCmdLineArguments(cJSON* versionMetadata, int* nElem)
 {
 	MCArgument* list = NULL;
+	MCArgument* argument = NULL;
 	size_t currListSize = 0;
 	int count = 0;
 	cJSON* jvmArgList = cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(versionMetadata, "arguments"), "jvm");
@@ -519,32 +523,48 @@ MCArgument* GetCmdLineArguments(cJSON* versionMetadata, int* nElem)
 		cJSON* item = cJSON_GetArrayItem(jvmArgList, i);
 		if (checkRules(cJSON_GetObjectItemCaseSensitive(item, "rules")))
 		{
-			HeapString values = createString("");
+			HeapString values = {0};
+			HeapString key = {0};
 			void* temp = list;
-			currListSize += sizeof(MCArgument);
-			list = (MCArgument*)realloc(list, currListSize);
-
-			if (temp)
-				free(temp);
+			list = (MCArgument*)realloc(list, sizeof(MCArgument)*(count+1));
 
 			if (cJSON_GetObjectItemCaseSensitive(item, "value"))
 			{
-				for (int j = 0; j < cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(item, "value")); j++)
+
+				cJSON* valueItem = cJSON_GetObjectItemCaseSensitive(item, "value");
+				if(valueItem->child)
+					valueItem = valueItem->child;
+				do
 				{
-					concatFromC(&values, cJSON_GetStringValue(cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(item, "value"), j)));
+					if(valueItem->next)
+					{
+						concatFromC(&values, cJSON_GetStringValue(valueItem));
+						valueItem = valueItem->next;
+					}
+					else
+					{
+						concatFromC(&values, cJSON_GetStringValue(valueItem));
+						break;
+					}
 					concatFromC(&values, " ");
-				}
+				}while(valueItem);
 			}
 			else
 			{
-				concatFromC(&values, cJSON_GetStringValue(cJSON_GetArrayItem(jvmArgList, i)));
+				const char* temparg = cJSON_GetStringValue(cJSON_GetArrayItem(jvmArgList, i));
+				if(!strcmp(temparg, "-cp"))
+				{
+					concatFromC(&key, temparg);
+				}
+				else
+				{
+					concatFromC(&values, temparg);	
+				}
 			}
 
-			list[count] = (MCArgument)
-			{
-				createString(NULL),
-				values
-			};
+			argument = &list[count];
+			argument->argument = key;
+			argument->value = values;
 
 			count++;
 		}
@@ -557,38 +577,57 @@ MCArgument* GetCmdLineArguments(cJSON* versionMetadata, int* nElem)
 		cJSON* item = cJSON_GetArrayItem(gmArgList, argC);
 		const char* arg = cJSON_GetStringValue(item);
 		if (!arg)
-			break;
-
-
-		count++;
-		void* temp = list;
-		currListSize += sizeof(MCArgument);
-		list = (MCArgument*)realloc(list, currListSize);
-		if (temp)
-			free(temp);
-		list[count] = (MCArgument)
 		{
-			createString(arg),
-			createString(NULL)
-		};
+			argC++;
+			continue;
+		}
+			
+		void* temp = list;
+		list = (MCArgument*)realloc(list, sizeof(MCArgument)*(count+1));
+		argument = &list[count];
+		argument->argument = createString(arg);
+		argument->value = createString(NULL);
+		count++;
 		argC += 2;
 	}
 
 	*nElem = count;
+	return list;
+}
+
+MCArgument* GetArgument(const MCArgument* list, int nElem, const char* const argName)
+{
+	MCArgument* arg = NULL;
+	for (int i = 0; i < nElem; i++)
+	{
+		MCArgument currarg = list[i];
+		if(!currarg.argument.string)
+			continue;
+		if(!strcmp(currarg.argument.string, argName))
+		{
+			arg = &(list[i]);
+		}
+	}
+	return arg;
 }
 
 int ChangeArgumentValue(MCArgument* arguments, int nElem, const char* const argName, const char* const value)
 {
 	if (!arguments || nElem <= 0)
-		return -1;
-	for (int i = 0; i < nElem; i++)
+		return 0;
+	
+	MCArgument* arg = NULL;
+
+	if((arg = GetArgument(arguments, nElem, argName)))
 	{
-		if(!strcmp(arguments[i].argument.string, argName))
-		{
-			CLEANSTRING(arguments[i].value);
-			arguments[i].value = createString(value);
-		}
+		CLEANSTRING(arg->value);
+		arg->value = createString(value);
 	}
+	else
+	{
+		return 0;
+	}
+	return 1;
 }
 
 void FreeArgList(MCArgument* list, int nElem)
@@ -603,30 +642,48 @@ void FreeArgList(MCArgument* list, int nElem)
 	free(list);
 }
 
+HeapString GetArgumentString(MCArgument* list, int nElem)
+{
+	HeapString temp = {0};
+	for(int i = 0; i < nElem; i++)
+	{
+		MCArgument arg;
+		arg = list[i];
+		if(arg.argument.string)
+		{
+			concatFromC(&temp, arg.argument.string);
+			concatFromC(&temp, " ");
+		}
+		
+		if(arg.value.string)
+		{
+			concatFromC(&temp, arg.value.string);
+			concatFromC(&temp, " ");
+		}
+	}
+	return temp;
+}
+
 HeapString GetCommand(const struct launcher_info_t info)
 {
-
+	MCArgument* arguments = NULL;
 	int nArgs = 0;
 	HeapString versionManifest = join(versionsFolder.string, "/", info.versionID, "/", info.versionID, ".json", NULL);
-	NORMALIZE(versionManifest);
 
 	FILE* vFile = NULL;
 	cJSON* parsedManifest = NULL;
-	if (fopen_s(&vFile, versionManifest.string, "rb"))
+	fopen_s(&vFile, versionManifest.string, "rb");
+	
+	if (vFile)
 	{
-		if (vFile)
-		{
-			fseek(vFile, 0, SEEK_END);
-			long fileSize = ftell(vFile);
-			fseek(vFile, 0, SEEK_SET);
-			char* temp = (char*)malloc(fileSize);
-			fread_s(temp, fileSize, 1, fileSize, vFile);
-			parsedManifest = cJSON_Parse(temp);
-			free(temp);
-		}
+		fseek(vFile, 0, SEEK_END);
+		long fileSize = ftell(vFile);
+		fseek(vFile, 0, SEEK_SET);
+		char* temp = (char*)malloc(fileSize);
+		fread_s(temp, fileSize, 1, fileSize, vFile);
+		parsedManifest = cJSON_Parse(temp);
+		free(temp);
 	}
-
-
 
 	UUID4_T uuid;
 	UUID4_STATE_T state;
@@ -634,6 +691,20 @@ HeapString GetCommand(const struct launcher_info_t info)
 
 	//Get the classpath
 	HeapString cp = GetStringSep(classPath, ';');
+
+	int nElements = 0;
+	if(parsedManifest)
+	{
+		arguments = GetCmdLineArguments(parsedManifest, &nElements);
+		ChangeArgumentValue(arguments, nElements, "-cp", cp.string);
+		ChangeArgumentValue(arguments, nElements, "--version", versionID.string);
+		ChangeArgumentValue(arguments, nElements, "--gameDir", mPath.string);
+		ChangeArgumentValue(arguments, nElements, "--assetsDir", assetsFolder.string);
+		ChangeArgumentValue(arguments, nElements, "--assetIndex", versionIDBase.string);
+		ChangeArgumentValue(arguments, nElements, "--versionType", "release");
+	}
+
+	//HeapString mcArguments = GetArgumentString(arguments, nElements);
 
 	// Generate player uuid
 	uuid4_seed(&state);

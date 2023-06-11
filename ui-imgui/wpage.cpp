@@ -86,6 +86,7 @@ static void LaunchCompleted(void)
 	progress11 = 0.0f;
 	stateLog = "Launching...";
 	LauncherInfo linfo = { 0 };
+	linfo.versionID = "1.16.5";
 	linfo.javapath = "javaw";
 	linfo.profile = GetProfile();
 	linfo.memalloc = 5000;

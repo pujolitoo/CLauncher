@@ -149,9 +149,19 @@ static void concat(HeapString* dest, const HeapString source)
 
 void concatFromC(HeapString* dest, const char* source)
 {
+	if(!source)
+		return;
+
 	HeapString src = createString(source);
-	concat(dest, src);
-	cleanString(&src, true);
+	if(dest->string)
+	{
+		concat(dest, src);
+		cleanString(&src, true);
+	}
+	else
+	{
+		*dest = src;
+	}
 }
 
 void concatString(HeapString* dest, const HeapString source)
